@@ -1,0 +1,740 @@
+1.โค้ดการออกแบบ Sonoff 4 CHPRO R3
+esphome:
+ name: sonoff-office
+ platform: ESP8266
+ board: esp01_1m
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+ota:
+ password: "81a2d4061e118b4abfe0d9ba3e95f86c"
+wifi:
+ ssid: "Username"
+ password: " password "
+ manual_ip:
+ static_ip: 192.168.0.153
+ gateway: 192.168.0.1
+ subnet: 255.255.255.0 
+ # Enable fallback hotspot (captive portal) in case wifi connection fails
+ ap:
+ ssid: "Sonoff-Office Fallback Hotspot"
+ password: "TfK5gv3HCn2c"
+captive_portal:
+binary_sensor:
+ 
+- platform: gpio
+ pin: 
+ number: GPIO
+0
+ mode : INPUT_PULLUP
+ inverted: true
+ name: "door1 bell"
+ filters:
+ 
+- delayed_on: 10ms 
+ 
+- platform: gpio
+ pin: GPIO9
+ name: "Sonoff Motion Area1"
+ filters:
+ 
+- delayed_on: 60ms
+ device_class: motion
+ 
+- platform: gpio
+ pin: GPIO10
+ name: "Sonoff Motion Area2"
+ filters:
+ 
+- delayed_on: 60ms
+ device_class: motion
+ 
+- platform: gpio
+ pin: GPIO14
+ name: "Sonoff Motion Area3"
+ filters:
+ 
+- delayed_on: 60ms
+ device_class: motion
+switch:
+ - platform: gpio
+ name: "Air "
+ pin: GPIO12
+ - platform: gpio
+ name: "Pulg"
+ pin: GPIO5
+output:
+ # Register the blue LED as a dimmable output ....
+ - platform: esp8266_pwm
+ id: blue_led
+ pin: GPIO13
+ inverted: true
+light:
+ # ... and then make a light out of it.
+ - platform: monochromatic
+ name: "Sonoff 4CH BlueLED"
+ output: blue_led
+ 
+ 
+2. โค้ดการออกแบบ Sonoff POWR2
+esphome:
+ name: sonoff-plug
+ platform: ESP8266
+ board: esp01_1m
+# Enable logging
+logger:
+ 
+# Enable Home Assistant API
+api:
+ota:
+ password: "8dd292e8b3ce733915acec5283361c4f"
+wifi:
+ ssid: "Username"
+ password: " password"
+ manual_ip:
+ static_ip: 192.168.0.145
+ gateway: 192.168.0.1
+ subnet: 255.255.255.0
+ # Enable fallback hotspot (captive portal) in case wifi connection 
+fails
+ ap:
+ ssid: "Sonoff-Plug Fallback Hotspot"
+ password: "Wn5aK8iTWy2H"
+captive_portal:
+binary_sensor:
+ - platform: gpio
+ pin:
+ number: GPIO14
+ mode: INPUT_PULLUP
+ inverted: true
+ id: button_1
+ on_press:
+ then:
+ -light.toggle: light_1
+ 
+ - platform: status
+ name: "My LS Status"
+output:
+ - platform: gpio
+ pin: GPIO12
+ id: relay_1
+light:
+ - platform: binary
+ name: "My plug"
+ id: light_1
+ output: relay_1
+status_led:
+ pin:
+ number: GPIO13
+ inverted: yes
+ 
+ 
+3. โค้ดการออกแบบ ESP WROOM 32 รีเลย์ประตู
+esphome:
+ name: door-control
+ platform: ESP32
+ board: esp32dev
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+ota:
+ password: "d88507e7f27373461a0681dac4a6092a"
+wifi:
+ ssid: "Username"
+ password: " password "
+ manual_ip:
+ static_ip: 192.168.0.129
+ gateway: 192.168.0.1
+ subnet: 255.255.255.0
+ # Enable fallback hotspot (captive portal) in case wifi connection 
+fails
+ ap:
+ ssid: "Door-Control Fallback Hotspot"
+ password: "6QR4yJBzH5jj"
+captive_portal:
+switch:
+ - platform: gpio
+ name: "door_office"
+ pin: GPIO13
+ id: door__office
+ inverted: yes
+ on_turn_on:
+ - delay: 2s
+ - switch.turn_off: door__office
+
+
+4. โค้ดการออกแบบ ESP WROOM 32 PZEM-004T AC Digital Power Energy Meter 
+Module
+esphome:
+ name: pzemoffice
+ platform: ESP32
+ board: esp32dev
+ 
+# Enable logging
+logger:
+ level: DEBUG
+ baud_rate: 0
+ 
+# Enable Home Assistant API
+api:
+ota:
+ password: "08ec42f7ef0d753249ade3d1ea5debc3"
+wifi:
+ ssid: "Username"
+ password: " password "
+ manual_ip:
+ static_ip: 192.168.0.115
+ gateway: 192.168.0.1
+ subnet: 255.255.255.0
+ # Enable fallback hotspot (captive portal) in case wifi connection 
+fails
+ ap:
+ ssid: "Pzemoffice Fallback Hotspot"
+ password: "RLq5QIuMfHxU"
+captive_portal:
+uart:
+ - id: ubus
+ tx_pin: GPIO1
+ rx_pin: GPIO3
+ baud_rate: 9600
+ stop_bits: 1
+modbus:
+ - id: mbus
+ uart_id: ubus
+switch:
+ 
+- platform: restart
+ name: needs restart 
+ 
+ 
+- platform: uart
+ uart_id: ubus
+ name: "Reset Lighting Energy "
+ data: [0x01, 0x42, 0x80, 0x11]
+ 
+- platform: uart
+ uart_id: ubus
+ name: "Reset Air Energy "
+ data: [0x02, 0x42, 0x80, 0xE1]
+ 
+- platform: uart
+ uart_id: ubus
+ name: "Reset switch Energy "
+ data: [0x03, 0x42, 0x81, 0x71]
+ 
+sensor:
+ 
+- platform: pzemac
+ current:
+ name: "Lighting Current"
+ voltage:
+ name: "Lighting Voltage"
+ power:
+ name: "Lighting Power"
+ energy:
+ name: "Lighting Energy"
+ unit_of_measurement: kWh
+ accuracy_decimals: 
+2
+ filters:
+ 
+-calibrate_linear:
+ 
+-0 
+-> 
+0
+ 
+-
+8.68 
+-> 21
+ 
+-multiply: 
+0.001
+ update_interval: 60s
+ address: 01
+ modbus_id: mbus
+ 
+- platform: pzemac
+ current:
+ name: "Air Currentt"
+ voltage:
+ name: "Air Voltage"
+ power:
+ name: "Air Power"
+ energy:
+ name: "Air Energy"
+ unit_of_measurement: kWh
+ accuracy_decimals: 2
+ filters:
+ -calibrate_linear:
+ -0 -> 0
+ -8.68 -> 21
+ -multiply: 0.001
+ update_interval: 60s
+ address: 02
+ modbus_id: mbus
+ - platform: pzemac
+ current:
+ name: "switch Current"
+ voltage:
+ name: "switch Voltage"
+ power:
+ name: "switch Power"
+ energy:
+ name: "switch Energy"
+ unit_of_measurement: kWh
+ accuracy_decimals: 2
+ filters:
+ -calibrate_linear:
+ -0 -> 0
+ -8.68 -> 21
+ -multiply: 0.001
+ update_interval: 60s
+ address: 03
+ modbus_id: mbus
+ 
+5. โค้ดการออกแบบ ESP 8266 D1 mini เซนเซอร์ฝุ่น 
+esphome:
+ name: pmbmp
+ platform: ESP8266
+ board: d1_mini
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+191
+ota:
+ password: "6f216d646520f972bf746a88d09adb09"
+wifi:
+ ssid: "Username"
+ password: " password "
+ manual_ip:
+ static_ip: 192.168.0.139
+ gateway: 10.0.0.1
+ subnet: 255.255.255.0
+ # Enable fallback hotspot (captive portal) in case wifi connection 
+fails
+ ap:
+ ssid: "Pmbmp Fallback Hotspot"
+ password: "rFqQAaFQmsHN"
+captive_portal:
+i2c:
+display:
+ - platform: ssd1306_i2c
+ id: oled1
+ update_interval: 0.5s
+ brightness: 0.4
+ model: "SH1106 128x64"
+ rotation: 180
+ address: 0x3C
+ lambda: |-
+ it.print(64, 0, id(font1), TextAlign::TOP_CENTER, "EE P.M");
+ it.printf(20, 16, id(font2), TextAlign::TOP_CENTER, "P.M1");
+ it.printf(64, 16, id(font2), TextAlign::TOP_CENTER, "P.M2.5");
+ it.printf(108, 16, id(font2), TextAlign::TOP_CENTER, "P.M10"); 
+ it.printf(20,48, id(font2), TextAlign::TOP_CENTER, "DHT");
+ 
+ it.printf(20, 32, id(font1), TextAlign::TOP_CENTER, " %.1f°", 
+id(pm1).state);
+ it.printf(64, 32, id(font1), TextAlign::TOP_CENTER, " %.1f°", 
+id(pm2).state);
+ it.printf(108, 32, id(font1), TextAlign::TOP_CENTER, " %.1f°", 
+id(pm2).state);
+ it.printf(64, 48, id(font1), TextAlign::TOP_CENTER, " %.1f°", 
+id(EEtem).state);
+ it.printf(108, 48, id(font1), TextAlign::TOP_CENTER, " %.1f°", 
+id(EEHum).state);
+ 
+font:
+ - file: "_fonts/nasalization.ttf"
+ id: font1
+ size: 12
+ 
+ - file: "_fonts/nasalization.ttf"
+ id: font2
+ size: 10
+ 
+uart:
+ rx_pin: GPIO1
+ baud_rate: 9600
+sensor:
+ - platform: pmsx003
+ type: PMSX003
+ pm_1_0:
+ name: "Particulate Matter <1.0µm Concentration"
+ id: pm1
+ pm_2_5:
+ name: "Particulate Matter <2.5µm Concentration"
+ id: pm2
+ pm_10_0:
+ name: "Particulate Matter <10.0µm Concentration"
+ id: pm3
+ 
+ - platform: dht
+ pin: D4
+ model: dht22 type2
+ temperature:
+ id: EEtem
+ name: "EE Temperature"
+ humidity:
+ id: EEHum
+ name: "EE Hum"
+ update_interval: 60s
+ 
+ 
+6. โค้ดการออกแบบ ESP 8266 D1 mini เทอร์โมสตัทแอร์
+esphome:
+ name: thermostat
+ platform: ESP8266
+ board: d1_mini
+ on_boot:
+ then:
+ - lambda: "id(oled_brightness).publish_state(0.4);"
+# Enable logging
+logger:
+# Enable Home Assistant API
+api:
+ota:
+ password: "fc76efb456e351197f3edea314759dcb"
+wifi:
+ ssid: "eelab24"
+ password: "unun8567"
+ manual_ip:
+ static_ip: 192.168.0.130
+ gateway: 192.168.0.1
+ subnet: 255.255.255.0
+ # Enable fallback hotspot (captive portal) in case wifi connection 
+fails
+ ap:
+ ssid: "Thermostat Fallback Hotspot"
+ password: "ysYHgKKkK1uG"
+captive_portal:
+i2c:
+switch:
+ - platform: template
+ id: heat_cool
+ optimistic: true
+ - platform: template
+ id: brightness
+ optimistic: true
+# relay comp
+ 
+- platform: gpio
+ id: relay_comp
+ name: "relay comp"
+ pin: 
+D0
+ inverted: true
+ 
+- platform: gpio
+ id: relay_Air
+ name: "relay Air"
+ pin: 
+D3
+ inverted: true
+binary_sensor:
+ 
+- platform: template
+ id: fire
+ 
+- platform: template
+ id: cool
+ 
+- platform: gpio
+ id: button
+ pin: 
+ number: 
+D4
+ inverted: true
+ on_press:
+ then:
+ 
+- switch.toggle: heat_cool
+ on_click:
+ 
+- min_length: 1000ms
+ max_length: 20000ms
+ then:
+ 
+- switch.toggle: brightness
+ 
+ 
+- platform: gpio
+ pin: 
+ number: 
+D5
+ mode : INPUT_PULLUP
+ inverted: true
+ name: "Sw Air"
+ filters:
+ 
+- delayed_on: 10ms 
+ 
+# Thermostat Climate
+climate:
+ - platform: bang_bang
+ name: "Thermostat Climate"
+ id: Thermostat_Climate
+ sensor: Temperature_2
+ default_target_temperature_low: 23 °C
+ default_target_temperature_high: 25 °C
+ cool_action:
+ - switch.turn_on: relay_comp
+ - lambda: id(cool).publish_state(true);
+ 
+ idle_action:
+ - switch.turn_off: relay_comp
+ - lambda: id(cool).publish_state(false);
+ - lambda: id(fire).publish_state(false);
+sensor:
+ - platform: template
+ id: oled_brightness
+ 
+ - platform: dht
+ pin: D8
+ model: dht22 type2
+ temperature:
+ id: Temperature_2
+ name: "Temperature2"
+ humidity:
+ id: Humidity_2
+ name: "Humidity2"
+ update_interval: 10s
+ 
+ - platform: rotary_encoder
+ id: rotary
+ name: "rotary_power"
+ pin_a:
+ number: D6
+ mode: INPUT_PULLUP
+ pin_b:
+ number: D7
+ mode: INPUT_PULLUP
+ on_clockwise:
+ - if:
+ condition:
+ switch.is_on: brightness
+ then:
+ -sensor.template.publish:
+ id: oled_brightness
+ state: !lambda "return id(oled_brightness).state + 0.01;"
+ -lambda: |-
+ id(oled1).set_brightness( id(oled_brightness).state );
+ else: 
+ -if:
+ condition:
+ switch.is_on: heat_cool
+ then:
+ - climate.control:
+ id: Thermostat_Climate
+target_temperature_high: !lambda "return 
+id(Thermostat_Climate).target_temperature_high + 0.5;"
+ else:
+ - climate.control:
+ id: Thermostat_Climate
+target_temperature_low: !lambda "return 
+id(Thermostat_Climate).target_temperature_low + 0.5;"
+ on_anticlockwise:
+ then:
+ -if:
+ condition:
+ switch.is_on: brightness
+ then:
+ - sensor.template.publish:
+ id: oled_brightness
+ state: !lambda "return id(oled_brightness).state -0.01;"
+ - lambda: |-
+ id(oled1).set_brightness( id(oled_brightness).state);
+ - if:
+ condition:
+ switch.is_on: heat_cool
+ then:
+ -climate.control:
+ id: Thermostat_Climate
+ target_temperature_high: !lambda "return 
+id(Thermostat_Climate).target_temperature_high - 0.5;"
+ else:
+ -climate.control:
+ id: Thermostat_Climate
+ target_temperature_low: !lambda "return 
+id(Thermostat_Climate).target_temperature_low - 0.5;"
+# OLED display
+display:
+ - platform: ssd1306_i2c
+ id: oled1
+ update_interval: 0.5s
+ brightness: 0.4
+ model: "SSD1306 128x64"
+ rotation: 180
+ address: 0x3C
+ lambda: |-
+ if (id(fire).state) {id(ani_fire).next_frame(); it.image(0, 0, 
+id(ani_fire));}
+ else if (id(cool).state) {id(ani_fan).next_frame(); it.image(0, 0,
+id(ani_fan));}
+ it.print(64, 0, id(font1), TextAlign::TOP_CENTER, "EEROOM");
+ it.printf(64, 4, id(font2), TextAlign::TOP_CENTER, " %.1f°", 
+id(Temperature_2).state);
+ it.printf(0, 64, id(font3), TextAlign::BASELINE_LEFT, "L:%.1f°", 
+id(Thermostat_Climate).target_temperature_low);
+ it.printf(128, 64, id(font3), TextAlign::BASELINE_RIGHT, "H:%.1f°", 
+id(Thermostat_Climate).target_temperature_high);
+ if (id(brightness).state) {it.image(56, 51, id(bulb));}
+ else if (id(heat_cool).state) {it.image(56, 51, id(arrow_right));}
+ else{it.image(56, 51, id(arrow_left));}
+animation:
+ - file: "_icons/thermostat/fan.gif"
+ id: ani_fan
+ - file: "_icons/thermostat/fire.gif"
+ id: ani_fire
+image:
+ - file: "_icons/thermostat/arrow-left-circle-outline.png"
+ id: arrow_left
+ - file: "_icons/thermostat/arrow-right-circle-outline.png"
+ id: arrow_right
+ - file: "_icons/thermostat/lightbulb-on-outline.png"
+ id: bulb
+font:
+ - file: "_fonts/nasalization.ttf"
+ id: font1
+ size: 12
+ - file: "_fonts/refsan.ttf"
+ id: font2
+ size: 42
+ - file: "_fonts/refsan.ttf"
+ id: font3
+ size: 13
+ 
+ 
+8. โค้ดการออกแบบ Automation
+
+8.1 การตั้งค่าAutomation ของ Motion Off EE Switch right ในการควบคุมการปิดไฟ
+แต่ละ Areaโดยจ าเป็นต้องเปลี่ยนค่า entity_id ของเซนเซอร์
+Edit in YAML ของ Triggers
+platform: state
+entity_id: binary_sensor.sonoff_motion_area1
+to: 'off'
+for:
+ hours: 0
+ minutes: 30
+ seconds: 0
+ milliseconds: 0
+Edit in YAML ของ Actions
+type: turn_off
+device_id: e4a5a28e8ed8fdb0baab4472b71ddde8
+entity_id: switch.0x842e14fffefa20eb_right
+domain: switch
+
+8.2 การตั้งค่าAutomation ของ Motion On EE Switch right ในการควบคุมการเปิดไฟ
+แต่ละ Areaโดยจ าเป็นต้องเปลี่ยนค่า entity_id ของเซนเซอร์
+Edit in YAML ของ Triggers
+platform: state
+entity_id: binary_sensor.sonoff_motion_area1
+to: 'on'
+Edit in YAML ของ Actions
+type: turn_on
+device_id: e4a5a28e8ed8fdb0baab4472b71ddde8
+entity_id: switch.0x842e14fffefa20eb_left
+domain: switch
+type: turn_on
+device_id: e4a5a28e8ed8fdb0baab4472b71ddde8
+entity_id: switch.0x842e14fffefa20eb_center
+domain: switch
+type: turn_on
+device_id: e4a5a28e8ed8fdb0baab4472b71ddde8
+entity_id: switch.0x842e14fffefa20eb_right
+domain: switch
+
+8.3การตั้งค่าAutomation ของกดกริ่งแจ้งเตือนผ่านไลน์และ google nest mini
+Edit in YAML ของ Triggers
+platform: state
+entity_id: binary_sensor.door1_bell
+id: binary_sensor.door1_bel
+Edit in YAML ของ Actions
+service: tts.google_translate_say
+data:
+ message: มีคนกดกริ่งค่ะ
+ entity_id: media_player.googlehome5059
+service: automation.trigger
+target:
+ entity_id: automation.snapshot_room 
+service: notify.line_notification
+data:
+ message: มีคนกดกริ่งค่ะ
+ data:
+ file: /config/www/tmp/snapshot_front_door.jpg
+ title: Line Notifycation
+ 
+8.4การตั้งค่า Automation ของค่าฝุ่นปิดเครื่องฟอกอากาศ
+Edit in YAML ของ Triggers
+platform: numeric_state
+entity_id: sensor.particulate_matter_2_5um_concentration_4
+below: '37'
+Edit in YAML ของ Actions
+service: light.turn_off
+target:
+ entity_id: light.my_plug
+ 
+8.5การตั้งค่า Automation ของค่าฝุ่นเปิดเครื่องฟอกอากาศ
+Edit in YAML ของ Triggers
+platform: numeric_state
+entity_id: sensor.particulate_matter_2_5um_concentration_4
+above: '38'
+Edit in YAML ของ Actions
+service: light.turn_on
+target:
+ entity_id: light.my_plug
+ 
+9. โค้ดการออกแบบ Node-Red
+
+9.1 การเขียนโค้ดฟังก์ชันค่าพารามิเตอร์ อุณหภูมิ และความชื้น 
+var tempc = msg.payload
+var text = "อุณหภูมิ " + tempc + msg.data.attributes.unit_of_measurement
+msg.headers = {"content-type":"application/x-www-formurlencoded", 
+"Authorization":"Bearer R35w3rotu6K4k7ON6piv5qtSQap 
+TFynW4p3ksibikQN"};
+msg.payload = {"message": text}; 
+return msg;
+
+9.2 การเขียนโค้ดฟังก์ชัน Smoke การเปิด-ปิด Sensor Door และหลอดไฟ
+msg.headers = {"content-type":"application/x-www-formurlencoded", 
+"Authorization":"Bearer R35w3rotu6K4k7ON6piv5qtSQap 
+TFynW4p3ksibikQN"};
+msg.payload = {"message": msg.payload};
+return msg;
+9.3 การเขียนโค้ดฟังก์ชัน การค านวณค่าไฟฟ้า
+var m_unit = (msg.payload);
+var m_Ft = (msg.data);
+var m_cost;
+if (m_unit <=150){
+ m_cost = ((m_unit * 3.2484)+38.22)+(((((m_unit * 3.2484)+38.22)-(m_unit * 
+(m_Ft/100)))*0.07)
+ - (m_unit *(m_Ft/100)));
+}
+if (m_unit >=151 && m_unit <= 400){
+ m_cost = (((150 * 3.2484)+38.22)+(((((150 * 3.2484)+38.22)-(150 * 
+(m_Ft/100)))*0.07)-( 150*(m_Ft/100))));
+ m_unit = m_unit - 150;
+ m_cost = m_cost + (((m_unit * 4.2218)+38.22)+(((((m_unit * 4.2218)+38.22)-
+(m_unit * (m_Ft/100)))*0.07)
+ - (m_unit *(m_Ft/100))));
+}
+if (m_unit > 400){
+ m_cost = (((((150 * 3.2484)+38.22)+(((((150 * 3.2484)+38.22)-(150 * 
+(m_Ft/100)))*0.07)-( 150*(m_Ft/100))))
+ + (((250 * 4.2218)+38.22)+(((((250 * 4.2218)+38.22)-(250 * (m_Ft/100)))*0.07)-(250 
+*(m_Ft/100)))) 
+ + ((((m_unit -400)* 4.4217)+38.22)+((((((m_unit -400) * 4.4217)+38.22)-((m_unit -
+400) * (m_Ft/100)))*0.07)
+ -((m_unit - 400) *(m_Ft/100))))))
+}
+msg.payload = parseFloat(m_cost).toFixed(2);
+var tempc = msg.payload
+var text = " ค่าไฟแสงสว่าง" + tempc + " บาท "
+msg.headers = {"content-type":"application/x-www-formurlencoded", 
+"Authorization":"Bearer R35w3rotu6K4k7ON6piv5qtSQap 
+TFynW4p3ksibikQN"};
+msg.payload = {"message": text}; 
+return msg;
